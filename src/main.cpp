@@ -148,7 +148,7 @@ void setup() {
         std::string param_username = request->getParam(PARAM_USERNAME, true)->value().c_str();
         std::string param_password = request->getParam(PARAM_PASSWORD, true)->value().c_str();
         // Authenticate admin
-        if (param_username == "admin" && param_password == "admin"){
+        if (param_username == adminUsername && param_password == adminPassword){
           hostIP = clientIP;
           request->send(LittleFS, "/partial/admincontrol.html");
         } else {
