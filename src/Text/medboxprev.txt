@@ -1,0 +1,107 @@
+
+#include <Arduino.h>
+#include <Preferences.h>
+struct hc595{uint8_t data;  uint8_t latch; uint8_t clock;};
+
+
+hc595 gridBox= {39,37,35};
+
+const int dayAlarms[] = {
+  0b00000000,0b01000000,0b00100000,0b00010000,0b00001000,0b00000100,0b00000010,0b00000001
+};
+
+void ledPostion(int day, int whichalarm){
+  digitalWrite(gridBox.data, LOW);
+  switch (whichalarm){
+    case 1:
+      for (int i = 0; i < 16; i++){
+        digitalWrite(gridBox.data, LOW);
+        digitalWrite(gridBox.clock, HIGH);
+        digitalWrite(gridBox.clock, LOW);
+      }
+      for(int i = 0; i < 8; i++){
+        if ((bitRead(dayAlarms[day], i) == 1)){    
+          digitalWrite(gridBox.data, HIGH);
+        } else {
+          digitalWrite(gridBox.data, LOW);
+        }
+        digitalWrite(gridBox.clock, HIGH);
+        digitalWrite(gridBox.clock, LOW);
+      }
+      break;
+    case 2:
+      for (int i = 0; i < 8; i++){
+        digitalWrite(gridBox.data, LOW);
+        digitalWrite(gridBox.clock, HIGH);
+        digitalWrite(gridBox.clock, LOW);
+      }
+      for(int i = 0; i < 8; i++){
+        if ((bitRead(dayAlarms[day], i) == 1)){    
+          digitalWrite(gridBox.data, HIGH);
+        } else {
+          digitalWrite(gridBox.data, LOW);
+        }
+        digitalWrite(gridBox.clock, HIGH);
+        digitalWrite(gridBox.clock, LOW);
+      }
+      for (int i = 0; i < 8; i++){
+        digitalWrite(gridBox.data, LOW);
+        digitalWrite(gridBox.clock, HIGH);
+        digitalWrite(gridBox.clock, LOW);
+      }
+      break;
+    case 3:
+      for(int i = 0; i < 8; i++){
+        if ((bitRead(dayAlarms[day], i) == 1)){    
+          digitalWrite(gridBox.data, HIGH);
+        } else {
+          digitalWrite(gridBox.data, LOW);
+        }
+        digitalWrite(gridBox.clock, HIGH);
+        digitalWrite(gridBox.clock, LOW);
+      }
+      for (int i = 0; i < 16; i++){
+        digitalWrite(gridBox.data, LOW);
+        digitalWrite(gridBox.clock, HIGH);
+        digitalWrite(gridBox.clock, LOW);
+      }
+      break;
+    default:
+      break;
+  }
+  digitalWrite(gridBox.latch, HIGH);
+  digitalWrite(gridBox.latch, LOW);  
+}
+
+
+void setup(void) {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+
+  pinMode(gridBox.data, OUTPUT);
+  pinMode(gridBox.latch, OUTPUT);
+  pinMode(gridBox.clock, OUTPUT);
+  
+  
+
+}
+int DAY = 1, TIME;
+void loop(void) {
+  //// put your main code here, to run repeatedly:
+   
+  TIME++;
+  if (TIME > 3 || TIME <= 0) {
+    TIME = 1;
+    DAY++;
+    if (DAY > 7 || DAY <= 0) DAY = 1;
+  }
+
+  Serial.print(DAY);
+  Serial.print(",");
+  Serial.println(TIME);
+  ledPostion(DAY,TIME);
+
+  delay(1000);
+
+}
+

@@ -1,0 +1,150 @@
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+// #include <Adafruit_MPU6050.h>
+#include <WiFi.h>
+#include <WiFiAP.h>
+#include <ESPmDNS.h>
+
+const char index_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance</title>
+    <style>
+        body{
+            background-color: #f9f9ff;
+            margin: 1rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 106%;
+        }
+
+        article{
+            background-color: white;
+            border-radius: .25rem;
+            box-shadow: 0.0145rem 0.029rem 0.174rem rgba(129, 145, 181, 0.01698), 0.0335rem 0.067rem 0.402rem rgba(129, 145, 181, 0.024), 0.0625rem 0.125rem 0.75rem rgba(129, 145, 181, 0.03), 0.1125rem 0.225rem 1.35rem rgba(129, 145, 181, 0.036), 0.2085rem 0.417rem 2.502rem rgba(129, 145, 181, 0.04302), 0.5rem 1rem 6rem rgba(129, 145, 181, 0.06), 0 0 0 0.0625rem rgba(129, 145, 181, 0.015);
+            padding: 1rem;
+        }
+
+        form{
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        label{
+            display: inherit;
+            flex-direction: inherit;
+            color: #415f91;
+        }
+        input:not([type=submit]){
+            border-start-end-radius: .2rem;
+            border-start-start-radius: .2rem;
+            background-color: #d9d9e0;
+            padding:.5rem;
+
+            border: none;
+            outline: none;
+            border-bottom: solid #415f91;
+        }
+        input:focus-visible{
+            outline: none;
+        }
+        input[type=submit]{
+            font-size: 103%;
+            cursor: pointer;
+            border-radius: 1000px;
+            color: white;
+            border: none;
+            background-color: #415f91;
+            padding: .5rem 1rem;
+        }
+        input[type=submit]:hover{
+            background-color: #1f3a68;
+        }
+    </style>
+</head>
+<body>
+    <article>
+        <h2>Attendace</h2>
+        <form action="/attendance" method="POST">
+            <label for="firstname">Firstname
+
+                <input type="text" name="firstname" required autofocus>
+            </label>
+            
+            <label for="lastname">Lastname
+
+                <input type="text" name="lastname" required >
+            </label>
+            <div>
+                <input type="submit">
+            </div>
+        </form>
+    </article>
+</body>
+</html>
+)rawliteral";
+
+const char* ssid = "S2-Mini";
+const char* password = "123456789";
+
+AsyncWebServer server(80);
+
+const char* PARAM_FIRSTNAME = "firstname";
+const char* PARAM_LASTNAME = "lastname";
+
+void notFound(AsyncWebServerRequest *request) {
+    request->send(404, "text/plain", "Not found");
+}
+
+void setup() {
+  // put your setup code here, to run once:
+   Serial.begin(115200);  
+  if (!WiFi.softAP(ssid, password)) {
+    log_e("Soft AP creation failed.");
+    while(1);
+  }
+
+  if (!MDNS.begin("s2mini")) {
+        Serial.println("Error setting up MDNS responder!");
+        while(1) {
+            delay(1000);
+        }
+    }
+
+  server.on("/", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    request->send_P(200, "text/html", index_html);
+  });
+
+  server.on("/attendance", HTTP_POST, [](AsyncWebServerRequest *request){
+    String firstname;
+    String lastname;
+    if (request->hasParam(PARAM_FIRSTNAME, true)) {
+        firstname = request->getParam(PARAM_FIRSTNAME, true)->value();
+    } else {
+        firstname = "No firstname sent";
+    }
+    if (request->hasParam(PARAM_LASTNAME, true)) {
+        lastname = request->getParam(PARAM_LASTNAME, true)->value();
+    } else {
+        lastname = "No lastname sent";
+    }
+    Serial.println(firstname + ", " + lastname);
+    request->send(200, "text/plain", "Hello, POST: " + firstname + ", " + lastname);
+  });
+
+  server.onNotFound(notFound);
+
+  server.begin();
+
+  // Add service to MDNS-SD
+  MDNS.addService("http", "tcp", 80);
+
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  delay(10);
+}

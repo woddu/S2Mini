@@ -1,0 +1,18 @@
+<article>
+    <form hx-post="/admin" hx-swap="outerHTML" hx-target="closest article" hx-vals='js:{"ip":local}'>
+    
+        <label for="username">Username
+            <input type="text" name="username" id="username" required autofocus>
+        </label>
+    
+        <label for="password">Password
+            <input type="password" name="password" id="password" required>
+            <small id="error-password"></small>
+        </label>
+    
+        <button>
+            Submit
+        </button>
+    
+    </form>
+</article>

@@ -1,0 +1,84 @@
+#include <Time.h>
+#include <Preferences.h>
+
+struct tm timeinfo;
+
+Preferences pref;
+
+bool editState, selecState, valState, updated;
+
+int _select, tempHour, tempMin, tempDay;
+
+void changeVal(int selection, bool chosen){
+  if (selection == 0 && chosen == true){
+
+  } else if(selection == 1 && chosen == true) {
+
+  } else if(selection == 2 && chosen == true) {
+
+  }
+}
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+  pinMode(15, INPUT_PULLDOWN);
+  pinMode(2, INPUT_PULLDOWN);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  if (editState){  
+    _select = map(analogRead(A0), 0, 4095, 0, 2);
+    Serial.println(_select);
+    if (digitalRead(2)){      
+      valState = true;
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+      if (_select == 0){
+        while (valState){
+          tempHour = map(analogRead(A0), 0, 4095, 0, 24);
+          Serial.println(tempHour);
+          vTaskDelay(10 / portTICK_PERIOD_MS);
+          if(digitalRead(2)) valState = false;
+        }
+      } else if(_select == 1) {
+        while (valState){
+          tempMin = map(analogRead(A0), 0, 4095, 0, 60);
+          Serial.println(tempMin);
+          vTaskDelay(10 / portTICK_PERIOD_MS);
+          if(digitalRead(2)) valState = false;
+        }
+      } else if(_select == 2) {
+        while (valState){
+          tempDay = map(analogRead(A0), 0, 4095, 1, 31);
+          Serial.println(tempDay);
+          vTaskDelay(10 / portTICK_PERIOD_MS);
+          if(digitalRead(2)) valState = false;
+        }        
+      }
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+    if (digitalRead(15) == 1){
+      timeinfo.tm_mday = tempDay;
+      timeinfo.tm_hour = tempHour;
+      timeinfo.tm_min = tempMin;
+      time_t t = mktime(&timeinfo);
+      printf("Setting time: %s", asctime(&timeinfo));
+      struct timeval now = { .tv_sec = t };
+      settimeofday(&now, NULL);
+      updated = true;     
+      editState = !editState;
+    }
+  } else {
+    if (digitalRead(15) == 1){
+      editState = !editState;
+    }
+    if(updated){
+      Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+    } else {
+      Serial.println("not updated");
+    }
+  }
+  
+  vTaskDelay(10/ portTICK_PERIOD_MS);
+}

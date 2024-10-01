@@ -1,0 +1,53 @@
+#include <Arduino.h>
+#include <vector>
+
+typedef struct {
+  int id;
+  String name;
+} Person;
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+
+  UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(NULL); // NULL for current task
+  Serial.printf("Stack high water mark: %d words\n", stackHighWaterMark);
+  Serial.println();
+
+  std::vector<Person> people;
+  people.push_back({1, "Alice"});
+  people.push_back({2, "Bob"});
+  people.push_back({3, "Charlie"});
+  Serial.print("vetor size :");
+  Serial.println(people.size());
+  for (const Person & person : people){
+    Serial.print(person.name);
+    Serial.print(", ");
+  }
+  Serial.println();
+
+  Serial.printf("Free heap: %d bytes\n", esp_get_free_heap_size());
+    Serial.printf("Stack high water mark: %d words\n", stackHighWaterMark);
+  
+  Serial.println();
+  
+  people.pop_back();
+  Serial.print("vetor size :");
+  Serial.println(people.size());
+  for (const Person & person : people){
+    Serial.print(person.name);
+    Serial.print(", ");
+  }
+  Serial.println();
+
+  Serial.printf("Free heap: %d bytes\n", esp_get_free_heap_size());
+    Serial.printf("Stack high water mark: %d words\n", stackHighWaterMark);
+  
+  Serial.println();
+
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  delay(10); // this speeds up the simulation
+}
