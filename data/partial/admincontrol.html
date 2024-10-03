@@ -3,14 +3,16 @@
 </h5>
 
 <article id="control" hx-swap-oob="true">
-    <form>
-        <label for="duration">Attendance Duration in Minutes
-            <input type="number" name="duration" id="duration" value="10" min="10" max="45" required autofocus>
-            <small>Min: 10 - Max: 45</small>
-        </label>
-
-        <button>
-            Start
-        </button>
-    </form>
+    <table>
+        <thead>
+            <tr>
+                <th>
+                    Name
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            %NAMES%
+        </tbody>
+    </table>
 </article>

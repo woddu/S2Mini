@@ -150,7 +150,15 @@ void setup() {
         // Authenticate admin
         if (param_username == adminUsername && param_password == adminPassword){
           hostIP = clientIP;
-          request->send(LittleFS, "/partial/admincontrol.html");
+          request->send(LittleFS, "/partial/admincontrol.html", String(), false, [](const String& var) -> String{
+            String names;
+            if (var == "NAMES"){
+              for (Response &responded : responses){
+                names += "<tr><td>"+String(responded.fields.c_str())+"</td></tr>";
+              }
+            }
+            return String();
+          });
         } else {
           String param_username = request->getParam(PARAM_USERNAME, true)->value();
           String param_password = request->getParam(PARAM_PASSWORD, true)->value();
@@ -243,7 +251,11 @@ void setup() {
           request->send(200,"text/plain");
       }
       responses.push_back({clientIP, collect});
-      request->send(200, "text/plain", ("Hello, POST: " + collect +", IP:"+ clientIP.toString().c_str()).c_str());
+
+      // Debuging purposes
+      // request->send(200, "text/plain", ("Hello, POST: " + collect +", IP:"+ clientIP.toString().c_str()).c_str());
+
+      request->send(200, "text/html","<hgroup><h1>"+name(clientIP)+"</h1><p>Kindly disconnect form the <strong>Wifi</strong> to give way to others.<br>"+clientIP.toString()+"</p></hgroup>");
     } else {
       request->send(200, "text/html","<hgroup><h1>"+name(clientIP)+"</h1><p>Kindly disconnect form the <strong>Wifi</strong> to give way to others.</p></hgroup>");
     }
