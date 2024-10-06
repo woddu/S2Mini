@@ -167,6 +167,7 @@ void setup() {
             if (var == "NAMES"){
               for (Response &responded : responses){
                 names += "<tr><td>"+String(responded.fields.c_str())+"</td></tr>";
+                return names;
               }
               return names;
             }
