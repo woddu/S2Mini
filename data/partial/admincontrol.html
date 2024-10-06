@@ -1,9 +1,9 @@
-<h5 id="profile" hx-swap-oob="true">
-<u style="cursor: pointer;" hx-post="/partial/adminprofile">Profile</u>
+<h5 id="nav-link" hx-swap-oob="true">
+<u style="cursor: pointer;" hx-post="/partial/adminprofile" hx-vals='js:{"ip":local}'>Profile</u>
 </h5>
 
-<article id="control" hx-swap-oob="true">
-    <table>
+
+    <table id="control" hx-swap-oob="true">
         <thead>
             <tr>
                 <th>
@@ -15,4 +15,3 @@
             %NAMES%
         </tbody>
     </table>
-</article>

@@ -73,7 +73,7 @@ void notFound(AsyncWebServerRequest *request) {
 
 void setup() {
   // put your setup code here, to run once:
-   Serial.begin(115200);
+  Serial.begin(115200);
 
   if(!LittleFS.begin(true)){
     Serial.println("An Error has occurred while mounting LittleFS");
@@ -95,6 +95,7 @@ void setup() {
   
   server.serveStatic("/style.css", LittleFS, "/style.css").setCacheControl("max-age=600");
   server.serveStatic("/htmx.min.js", LittleFS, "/htmx.min.js").setCacheControl("max-age=600");
+  server.serveStatic("/qr.png", LittleFS, "/qr.png").setCacheControl("max-age=600");
 
 
   // Server admin.html
@@ -128,7 +129,16 @@ void setup() {
     } else {
       // Check if the client is the Host or has already authenticated
       if (clientIP == hostIP){
-        request->send(LittleFS, "/partial/admincontrol.html");
+        request->send(LittleFS, "/partial/admincontrol.html", String(), false, [](const String& var) -> String{
+            String names;
+            if (var == "NAMES"){
+              for (Response &responded : responses){
+                names += "<tr><td>"+String(responded.fields.c_str())+"</td></tr>";
+              }
+              return names;
+            }
+            return String();
+          });
       } else {
         request->redirect("/");
       }
@@ -149,19 +159,24 @@ void setup() {
         std::string param_password = request->getParam(PARAM_PASSWORD, true)->value().c_str();
         // Authenticate admin
         if (param_username == adminUsername && param_password == adminPassword){
+
           hostIP = clientIP;
+
           request->send(LittleFS, "/partial/admincontrol.html", String(), false, [](const String& var) -> String{
             String names;
             if (var == "NAMES"){
               for (Response &responded : responses){
                 names += "<tr><td>"+String(responded.fields.c_str())+"</td></tr>";
               }
+              return names;
             }
             return String();
           });
         } else {
+
           String param_username = request->getParam(PARAM_USERNAME, true)->value();
           String param_password = request->getParam(PARAM_PASSWORD, true)->value();
+          
           request->send(LittleFS, "/partial/adminerror.html", String(), false, [param_username, param_password](const String& var) -> String{
             if (var == "ERROR"){
               String inputs;

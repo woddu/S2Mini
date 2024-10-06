@@ -16,15 +16,24 @@
             </ul>
             <ul>
                 <li>
-                    <div id="profile"></div>
+                    <div id="nav-link"></div>
                 </li>
             </ul>
         </nav>
     </header>
     <main class="container">
-        <div hx-post="/partial/adminform" hx-swap="outerHTML" hx-trigger="load" hx-vals='js:{"ip":local}'></div>
+        <div hx-post="/partial/adminform" hx-swap="outerHTML" hx-trigger="load delay:250ms" hx-vals='js:{"ip":local}'></div>
         <div id="control"></div>
+        <br>
+        <br>
+        <div role="group" style="gap: 1rem;">
+            <img src="qr.png" alt="QR Code for Attendance Form" width="150" height="150" style="vertical-align:middle">
+            <p>Let others Scan the QR code after connecting to the Wifi</p>
+        </div>
     </main>
+    <footer class="container">
+        <p>Not showing anything? try using Chrome.</p>
+    </footer>
     <script src="/htmx.min.js"></script>
     <iframe id="iframe" sandbox="allow-same-origin" style="display: none"></iframe>
     <script>
