@@ -2,16 +2,72 @@
 <u style="cursor: pointer;" hx-post="/partial/adminprofile" hx-vals='js:{"ip":local}'>Profile</u>
 </h5>
 
+<table id="control" hx-swap-oob="true">
+    <thead>
+        <tr>
+            <th>
+                Name
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        %NAMES%
+    </tbody>
+</table>
 
-    <table id="control" hx-swap-oob="true">
-        <thead>
-            <tr>
-                <th>
-                    Name
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-            %NAMES%
-        </tbody>
-    </table>
+
+
+<button id="downloadBtn" hx-swap-oob="true">Download</button>
+
+<script id="csv" hx-swap-oob="true">
+// Sample data: an array of objects with just the name key
+const data = [
+    %CSV%
+];
+
+// Function to convert array of objects to CSV
+function arrayToCSV(array) {
+    const csvRows = [];
+
+    // Get the headers (in this case, just the "name" header)
+    const headers = Object.keys(array[0]);
+    csvRows.push(headers.join(',')); // Join headers with comma
+
+    // Loop through the rows
+    for (const row of array) {
+        const values = headers.map(header => {
+            const escaped = ('' + row[header]).replace(/"/g, '\\"'); // Escape quotes
+            return `"${escaped}"`; // Wrap values in quotes
+        });
+        csvRows.push(values.join(',')); // Join values with comma
+    }
+
+    // Add the current date at the bottom of the names
+    const currentDate = new Date();
+    const formattedDate = `${currentDate.getMonth() + 1}/${currentDate.getDate()}/${currentDate.getFullYear()}`;
+    csvRows.push(`"Date", "${formattedDate}"`); // Add date in a new row with a header
+
+    return csvRows.join('\n'); // Join rows with newline
+}
+
+// Function to download the CSV file
+function downloadCSV(filename, data) {
+    const csv = arrayToCSV(data);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a); // Append anchor to body
+    a.click(); // Trigger download
+    document.body.removeChild(a); // Remove anchor
+    URL.revokeObjectURL(url); // Clean up
+}
+
+// Usage
+document.getElementById('downloadBtn').addEventListener('click', function() {
+    downloadCSV('names.csv', data);
+});
+
+</script>

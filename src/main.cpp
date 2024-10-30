@@ -7,6 +7,8 @@
 #include <vector>
 #include <string>
 
+using namespace std;
+
 const char* ssid = "S2-Mini";
 const char* password = "123456789";
 
@@ -14,7 +16,7 @@ AsyncWebServer server(80);
 
 typedef struct {
   IPAddress ip;
-  std::string fields;
+  string fields;
 } Response;
 
 // typedef struct {
@@ -23,8 +25,8 @@ typedef struct {
 // } Field;
 
 // TODO Vector of form fields
-std::string adminUsername = "admin";
-std::string adminPassword = "admin";
+string adminUsername = "admin";
+string adminPassword = "admin";
 
 const char* PARAM_FIRSTNAME = "firstname";
 const char* PARAM_LASTNAME = "lastname";
@@ -32,16 +34,23 @@ const char* PARAM_USERNAME = "username";
 const char* PARAM_PASSWORD = "password";
 
 // TODO Boolean for if accepting responses
-// TODO Countdown for time allocation for attendace
+bool start = false;
+bool end = false;
 
+static TimerHandle_t xTimer = NULL;
+// TODO Countdown for time allocation for attendace
+void TimerCallBack(TimerHandle_t xTimer){
+  start = false;
+}
 // TODO Vector of responses
 
-std::vector<Response> responses;
-// std::vector<IPAddress> respondents;
+// array<Response, 70> s_responses;
+vector<Response> responses;
+// vector<IPAddress> respondents;
 
 IPAddress hostIP;
 
-// std::vector<Field> fields;
+// vector<Field> fields;
 
 // TODO Clear vectors on End method called by the teacher 
 
@@ -74,6 +83,7 @@ void notFound(AsyncWebServerRequest *request) {
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
+
 
   if(!LittleFS.begin(true)){
     Serial.println("An Error has occurred while mounting LittleFS");
@@ -130,12 +140,18 @@ void setup() {
       // Check if the client is the Host or has already authenticated
       if (clientIP == hostIP){
         request->send(LittleFS, "/partial/admincontrol.html", String(), false, [](const String& var) -> String{
-            String names;
+            String names, csv;
             if (var == "NAMES"){
               for (Response &responded : responses){
                 names += "<tr><td>"+String(responded.fields.c_str())+"</td></tr>";
               }
               return names;
+            }
+            if (var == "CSV"){
+              for (Response &responded : responses){
+                csv += "{ name: \""+ String(responded.fields.c_str()) + "\"},";
+              }
+              return csv;
             }
             return String();
           });
@@ -155,12 +171,22 @@ void setup() {
       }
     }
     if (request->hasParam(PARAM_USERNAME, true) && request->hasParam(PARAM_PASSWORD, true)){
-        std::string param_username = request->getParam(PARAM_USERNAME, true)->value().c_str();
-        std::string param_password = request->getParam(PARAM_PASSWORD, true)->value().c_str();
+        string param_username = request->getParam(PARAM_USERNAME, true)->value().c_str();
+        string param_password = request->getParam(PARAM_PASSWORD, true)->value().c_str();
         // Authenticate admin
         if (param_username == adminUsername && param_password == adminPassword){
 
           hostIP = clientIP;
+
+          xTimer = xTimerCreate(
+            "Timer",
+            1800000 / portTICK_PERIOD_MS,
+            pdFALSE,
+            (void*)0,
+            TimerCallBack
+          );
+
+          xTimerStart(xTimer, portMAX_DELAY);
 
           request->send(LittleFS, "/partial/admincontrol.html", String(), false, [](const String& var) -> String{
             String names;
@@ -229,51 +255,60 @@ void setup() {
   });
   // HTMX attendanceform
   server.on("/partial/attendanceform", HTTP_POST, [] (AsyncWebServerRequest *request){
-    IPAddress clientIP;
-    // Check for ip param
-    if (request->hasParam("ip", true)){
-      if (!clientIP.fromString(request->getParam("ip",true)->value())){
-        request->send(200, "text/html","<h1>Please Use Chrome or Firefox</h1>");
-        // request->send(200, "text/plain", "Unsuccessful");
-      }
-    }
-    // Check if the clientIp has already responded
-    if (!responded(clientIP)){
-      request->send(LittleFS, "/partial/attendanceform.html");
+
+    if(!start){
+      request->send(200, "text/html","<h1>Attendance is not yet open</h1>");
     } else {
-      request->send(200, "text/html","<hgroup><h1>"+name(clientIP)+"</h1><p>Kindly disconnect form the <strong>Wifi</strong> to give way to others.</p></hgroup>");
+      IPAddress clientIP;
+      // Check for ip param
+      if (request->hasParam("ip", true)){
+        if (!clientIP.fromString(request->getParam("ip",true)->value())){
+          request->send(200, "text/html","<h1>Please Use Chrome or Firefox</h1>");
+          // request->send(200, "text/plain", "Unsuccessful");
+        }
+      }
+      // Check if the clientIp has already responded
+      if (!responded(clientIP)){
+        request->send(LittleFS, "/partial/attendanceform.html");
+      } else {
+        request->send(200, "text/html","<hgroup><h1>"+name(clientIP)+"</h1><p>Kindly disconnect form the <strong>Wifi</strong> to give way to others.</p></hgroup>");
+    }
     }
   });
   // Attendance Submition
   server.on("/attendance", HTTP_POST, [](AsyncWebServerRequest *request){
-    IPAddress clientIP;
-    // Check for ip param
-    if (request->hasParam("ip", true)){
-      if (!clientIP.fromString(request->getParam("ip",true)->value())){
-        request->send(200, "text/html", "Unsuccessful");
-      }
-    }
-    // Check if the clientIp has already responded
-    if (!responded(clientIP)){
-
-      std::string collect;
-
-      if (request->hasParam(PARAM_FIRSTNAME, true) && request->hasParam(PARAM_LASTNAME, true)) {
-          collect = request->getParam(PARAM_FIRSTNAME, true)->value().c_str();
-          collect.append(" ");
-          collect.append(request->getParam(PARAM_LASTNAME, true)->value().c_str());
-      } else {
-          collect = "Nothing sent";
-          request->send(200,"text/plain");
-      }
-      responses.push_back({clientIP, collect});
-
-      // Debuging purposes
-      // request->send(200, "text/plain", ("Hello, POST: " + collect +", IP:"+ clientIP.toString().c_str()).c_str());
-
-      request->send(200, "text/html","<hgroup><h1>"+name(clientIP)+"</h1><p>Kindly disconnect form the <strong>Wifi</strong> to give way to others.<br>"+clientIP.toString()+"</p></hgroup>");
+    if(!start){
+      request->send(200, "text/html","<h1>Attendance is not yet open</h1>");
     } else {
-      request->send(200, "text/html","<hgroup><h1>"+name(clientIP)+"</h1><p>Kindly disconnect form the <strong>Wifi</strong> to give way to others.</p></hgroup>");
+      IPAddress clientIP;
+      // Check for ip param
+      if (request->hasParam("ip", true)){
+        if (!clientIP.fromString(request->getParam("ip",true)->value())){
+          request->send(200, "text/html", "Unsuccessful");
+        }
+      }
+      // Check if the clientIp has already responded
+      if (!responded(clientIP)){
+
+        string collect;
+
+        if (request->hasParam(PARAM_FIRSTNAME, true) && request->hasParam(PARAM_LASTNAME, true)) {
+            collect = request->getParam(PARAM_FIRSTNAME, true)->value().c_str();
+            collect.append(" ");
+            collect.append(request->getParam(PARAM_LASTNAME, true)->value().c_str());
+        } else {
+            collect = "Nothing sent";
+            request->send(200,"text/plain");
+        }
+        responses.push_back({clientIP, collect});
+
+        // Debuging purposes
+        // request->send(200, "text/plain", ("Hello, POST: " + collect +", IP:"+ clientIP.toString().c_str()).c_str());
+
+        request->send(200, "text/html","<hgroup><h1>"+name(clientIP)+"</h1><p>Kindly disconnect form the <strong>Wifi</strong> to give way to others.<br>"+clientIP.toString()+"</p></hgroup>");
+      } else {
+        request->send(200, "text/html","<hgroup><h1>"+name(clientIP)+"</h1><p>Kindly disconnect form the <strong>Wifi</strong> to give way to others.</p></hgroup>");
+      }
     }
   });
 

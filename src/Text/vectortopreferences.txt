@@ -1,0 +1,74 @@
+#include <Preferences.h>
+#include <ArduinoJson.h> // Make sure to include the ArduinoJson library
+#include <vector>
+#include <string>
+
+using namespace std;
+
+typedef struct {
+    int ip;
+    string fields;
+} Response;
+
+Preferences preferences;
+
+void setup() {
+    Serial.begin(115200);
+    preferences.begin("responses", false); // Open Preferences
+
+    // Example responses
+    vector<Response> responses;
+    for (int i = 0; i <= 10; ++i) {
+        responses.push_back({i, to_string(i)});
+    }
+
+    // Serialize the vector to JSON
+    DynamicJsonDocument doc(1024);
+    JsonArray array = doc.to<JsonArray>();
+
+    for (const auto& response : responses) {  
+        JsonObject obj = array.createNestedObject();
+        obj["ip"] = response.ip;
+        obj["fields"] = response.fields.c_str();
+    }
+
+    // Convert to string
+    String jsonString;
+    serializeJson(doc, jsonString);
+
+    // Store in Preferences
+    preferences.putString("responses", jsonString);
+    Serial.println("Json Stored.");
+
+
+    // Retrieve the JSON string
+    String storedJson = preferences.getString("responses", "");
+    Serial.println("Json Loaded.");
+
+    // Deserialize the JSON string back to vector
+    vector<Response> loadedResponses;
+    DynamicJsonDocument loadDoc(1024);
+    deserializeJson(loadDoc, storedJson);
+    JsonArray loadedArray = loadDoc.as<JsonArray>();
+
+    for (JsonObject obj : loadedArray) {
+        Response response;
+        response.ip = obj["ip"];
+        response.fields = obj["fields"].as<string>();
+        loadedResponses.push_back(response);
+    }
+
+    // Print loaded responses
+    for (const auto& response : loadedResponses) {
+        Serial.print("IP: ");
+        Serial.print(response.ip);
+        Serial.print(", Fields: ");
+        Serial.println(response.fields.c_str());
+    }
+
+    preferences.end(); // Close Preferences
+}
+
+void loop() {
+    // Nothing here
+}

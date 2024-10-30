@@ -24,6 +24,7 @@
     <main class="container">
         <div hx-post="/partial/adminform" hx-swap="outerHTML" hx-trigger="load delay:250ms" hx-vals='js:{"ip":local}'></div>
         <div id="control"></div>
+        <div id="downloadBtn"></div>
         <br>
         <br>
         <div role="group" style="gap: 1rem;">
@@ -36,6 +37,7 @@
     </footer>
     <script src="/htmx.min.js"></script>
     <iframe id="iframe" sandbox="allow-same-origin" style="display: none"></iframe>
+    <script id="csv"></script>
     <script>
         let local;
 
