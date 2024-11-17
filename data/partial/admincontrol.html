@@ -1,12 +1,29 @@
 <h5 id="nav-link" hx-swap-oob="true">
-<u style="cursor: pointer;" hx-post="/partial/adminprofile" hx-vals='js:{"ip":local}'>Profile</u>
+    <u style="cursor: pointer;" hx-post="/partial/adminprofile" hx-vals='js:{"ip":local}'>Profile</u>
 </h5>
+
+<article id="manual" hx-swap-oob="true" style="margin-bottom: 3rem;">
+    <h2>Add Student</h2>
+    <form hx-post="/manual" hx-vals='js:{"ip":local}''>
+        <label for="firstname">First Name
+            <input type="text" name="firstname" id="firstname" maxlength="15" required>
+        </label>
+    
+        <label for="lastname">Last Name
+            <input type="text" name="lastname" id="lastname" maxlength="15" required>
+        </label>
+        
+        <button>
+            Submit
+        </button>
+    </form>
+</article>
 
 <table id="control" hx-swap-oob="true">
     <thead>
         <tr>
             <th>
-                Name
+                Names
             </th>
         </tr>
     </thead>
@@ -15,26 +32,26 @@
     </tbody>
 </table>
 
-
-
 <button id="downloadBtn" hx-swap-oob="true">Download</button>
-
+<div id="buttons" style="display: flex; justify-content: space-between;" hx-swap-oob="true">
+    
+    <button hx-post="/end" hx-vals='js:{"ip":local}'' class="secondary">End</button>
+</div>
 <script id="csv" hx-swap-oob="true">
-// Sample data: an array of objects with just the name key
-const data = [
-    %CSV%
-];
+    // Sample data: an array of objects with just the name key
+    const data = [
+        %CSV%
+    ];
 
-// Function to convert array of objects to CSV
-function arrayToCSV(array) {
-    const csvRows = [];
+    
 
-    // Get the headers (in this case, just the "name" header)
-    const headers = Object.keys(array[0]);
-    csvRows.push(headers.join(',')); // Join headers with comma
+    // Function to convert array of objects to CSV
+    function arrayToCSV(array) {
+        const csvRows = [];
 
-    // Loop through the rows
-    for (const row of array) {
+        // Get the headers (in this case, just the "name" header)
+        const headers = Object.keys(array[0]);
+        csvRows.push(headers.join(' ,')); // Join headers with comma // Loop through the rows for (const row of array) {
         const values = headers.map(header => {
             const escaped = ('' + row[header]).replace(/"/g, '\\"'); // Escape quotes
             return `"${escaped}"`; // Wrap values in quotes
@@ -48,26 +65,29 @@ function arrayToCSV(array) {
     csvRows.push(`"Date", "${formattedDate}"`); // Add date in a new row with a header
 
     return csvRows.join('\n'); // Join rows with newline
-}
+        }
 
-// Function to download the CSV file
-function downloadCSV(filename, data) {
-    const csv = arrayToCSV(data);
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a); // Append anchor to body
-    a.click(); // Trigger download
-    document.body.removeChild(a); // Remove anchor
-    URL.revokeObjectURL(url); // Clean up
-}
+    // Function to download the CSV file
+    function downloadCSV(filename, data) {
+        const csv = arrayToCSV(data);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
 
-// Usage
-document.getElementById('downloadBtn').addEventListener('click', function() {
-    downloadCSV('names.csv', data);
-});
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a); // Append anchor to body
+        a.click(); // Trigger download
+        document.body.removeChild(a); // Remove anchor
+        URL.revokeObjectURL(url); // Clean up
+    }
+
+    // Usage
+    document.getElementById('downloadBtn').addEventListener('click', function () {
+        downloadCSV('names.csv', data);
+        console.log('Download button clicked');
+    });
+
+    %DOWNLOAD%
 
 </script>

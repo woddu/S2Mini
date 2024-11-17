@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin</title>
+    <title>Teacher</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
         <nav>
             <ul>
                 <li>
-                    <h1>Admin</h1>
+                    <h1>Teacher</h1>
                 </li>
             </ul>
             <ul>
@@ -23,10 +23,12 @@
     </header>
     <main class="container">
         <div hx-post="/partial/adminform" hx-swap="outerHTML" hx-trigger="load delay:250ms" hx-vals='js:{"ip":local}'></div>
+        <div id="manual"></div>
         <div id="control"></div>
         <div id="downloadBtn"></div>
+        <div id="buttons"></div>
         <br>
-        <br>
+        <br/>
         <div role="group" style="gap: 1rem;">
             <img src="qr.png" alt="QR Code for Attendance Form" width="150" height="150" style="vertical-align:middle">
             <p>Let others Scan the QR code after connecting to the Wifi</p>
@@ -41,6 +43,25 @@
     <script>
         let local;
 
+        if (!!window.EventSource) {
+            var source = new EventSource('/events');
+            
+            source.addEventListener('open', function(e) {
+             console.log("Events Connected");
+            }, false);
+            source.addEventListener('error', function(e) {
+             if (e.target.readyState != EventSource.OPEN) {
+               console.log("Events Disconnected");
+             }
+            }, false);
+
+
+            source.addEventListener('finished', function(e) {
+                window.location.reload();
+            }, false);
+        }
+
+        
         function getIPs(callback) {
             var ip_dups = {};
 

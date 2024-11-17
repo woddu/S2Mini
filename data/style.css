@@ -593,6 +593,29 @@ button:focus,
   --pico-box-shadow: var(--pico-button-hover-box-shadow, 0 0 0 rgba(0, 0, 0, 0)), 0 0 0 var(--pico-outline-width) var(--pico-primary-focus);
 }
 
+:is(button, [type=submit], [type=button], [role=button]).secondary,
+[type=reset],
+[type=file]::file-selector-button {
+  --pico-background-color: var(--pico-secondary-background);
+  --pico-border-color: var(--pico-secondary-border);
+  --pico-color: var(--pico-secondary-inverse);
+  cursor: pointer;
+}
+:is(button, [type=submit], [type=button], [role=button]).secondary:is([aria-current]:not([aria-current=false]), :hover, :active, :focus),
+[type=reset]:is([aria-current]:not([aria-current=false]), :hover, :active, :focus),
+[type=file]::file-selector-button:is([aria-current]:not([aria-current=false]), :hover, :active, :focus) {
+  --pico-background-color: var(--pico-secondary-hover-background);
+  --pico-border-color: var(--pico-secondary-hover-border);
+  --pico-color: var(--pico-secondary-inverse);
+}
+:is(button, [type=submit], [type=button], [role=button]).secondary:focus, :is(button, [type=submit], [type=button], [role=button]).secondary:is([aria-current]:not([aria-current=false])):focus,
+[type=reset]:focus,
+[type=reset]:is([aria-current]:not([aria-current=false])):focus,
+[type=file]::file-selector-button:focus,
+[type=file]::file-selector-button:is([aria-current]:not([aria-current=false])):focus {
+  --pico-box-shadow: var(--pico-button-hover-box-shadow, 0 0 0 rgba(0, 0, 0, 0)), 0 0 0 var(--pico-outline-width) var(--pico-secondary-focus);
+}
+
 
 [type=button] {
   margin-bottom: var(--pico-spacing);
@@ -602,14 +625,20 @@ button:focus,
  * Table
  */
 
-th {
+ :where(table) {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  text-indent: 0;
+}
+
+th, td {
   padding: calc(var(--pico-spacing) / 2) var(--pico-spacing);
   border-bottom: var(--pico-border-width) solid var(--pico-table-border-color);
   background-color: var(--pico-background-color);
   color: var(--pico-color);
   font-weight: var(--pico-font-weight);
-  text-align: left;
-  text-align: start;
+  text-align: center;
 }
 
 /**
@@ -743,12 +772,20 @@ input:not([type=checkbox], [type=radio]) {
   margin-bottom: var(--pico-spacing);
 }
 
+:where(input,select,textarea)[aria-invalid=true] {
+  --pico-border-color: var(--pico-form-element-invalid-border-color);
+}
+
 :where(input) + small {
   display: block;
   width: 100%;
   margin-top: calc(var(--pico-spacing) * -0.75);
   margin-bottom: var(--pico-spacing);
   color: var(--pico-muted-color);
+}
+
+:where(input,select,textarea,fieldset,.grid)[aria-invalid=true]+small {
+  color: var(--pico-del-color);
 }
 
 label > :where(input) {
