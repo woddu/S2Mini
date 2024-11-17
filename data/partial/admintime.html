@@ -1,0 +1,11 @@
+<article>
+    <h2>Set Time Limit</h2>
+    <form hx-post="/start" hx-swap="outerHTML" hx-target="closest article" hx-vals='js:{"ip":local}'>
+        <label for="time">Minutes</label>
+        <div role="group">
+            <input name="time" type="number" min="5" max="30" required autofocus value="5" />
+            <button>Set</button>
+        </div>
+        <small>Minimum is 5 Mins</small>
+    </form>
+</article>

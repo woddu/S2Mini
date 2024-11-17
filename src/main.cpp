@@ -12,7 +12,13 @@ using namespace std;
 const char* ssid = "S2-Mini";
 const char* password = "123456789";
 
+const uint8_t redLED = 1;
+const uint8_t greenLED = 2;
+const uint8_t blueLED = 3;
+
 AsyncWebServer server(80);
+
+AsyncEventSource events("/events");
 
 typedef struct {
   IPAddress ip;
@@ -34,13 +40,19 @@ const char* PARAM_USERNAME = "username";
 const char* PARAM_PASSWORD = "password";
 
 // TODO Boolean for if accepting responses
-bool start = false;
-bool end = false;
+bool started = false;
+bool ended = true;
 
 static TimerHandle_t xTimer = NULL;
 // TODO Countdown for time allocation for attendace
 void TimerCallBack(TimerHandle_t xTimer){
-  start = false;
+  ended = true;
+
+  // events.send("finished","finished",millis());
+
+  if(xTimer != NULL){
+    xTimerStop(xTimer, 0);
+  }
 }
 // TODO Vector of responses
 
@@ -83,6 +95,10 @@ void notFound(AsyncWebServerRequest *request) {
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
+
+  pinMode(redLED, OUTPUT);
+  pinMode(greenLED, OUTPUT);
+  pinMode(blueLED, OUTPUT);
 
 
   if(!LittleFS.begin(true)){
@@ -177,28 +193,21 @@ void setup() {
         if (param_username == adminUsername && param_password == adminPassword){
 
           hostIP = clientIP;
-
-          xTimer = xTimerCreate(
-            "Timer",
-            1800000 / portTICK_PERIOD_MS,
-            pdFALSE,
-            (void*)0,
-            TimerCallBack
-          );
-
-          xTimerStart(xTimer, portMAX_DELAY);
-
-          request->send(LittleFS, "/partial/admincontrol.html", String(), false, [](const String& var) -> String{
-            String names;
-            if (var == "NAMES"){
-              for (Response &responded : responses){
-                names += "<tr><td>"+String(responded.fields.c_str())+"</td></tr>";
+          if (started){
+            request->send(LittleFS, "/partial/admincontrol.html", String(), false, [](const String& var) -> String{
+              String names;
+              if (var == "NAMES"){
+                for (Response &responded : responses){
+                  names += "<tr><td>"+String(responded.fields.c_str())+"</td></tr>";
+                  return names;
+                }
                 return names;
               }
-              return names;
-            }
-            return String();
-          });
+              return String();
+            });
+          } else {
+            request->send(LittleFS, "/partial/admintime.html");
+          }
         } else {
 
           String param_username = request->getParam(PARAM_USERNAME, true)->value();
@@ -217,6 +226,75 @@ void setup() {
       } else {
         request->send(LittleFS, "/partial/adminform.html");
       }
+  });
+  // Admin Start
+  server.on("/start", HTTP_POST, [](AsyncWebServerRequest *request){
+    IPAddress clientIP;
+    // Check for ip param
+    if (request->hasParam("ip", true)){
+      if (!clientIP.fromString(request->getParam("ip",true)->value())){
+        request->send(200, "text/html","<h1>Please Use Chrome or Firefox</h1>");
+        // request->send(200, "text/plain", "Unsuccessful");
+      }
+    }
+    if (clientIP == hostIP){
+    if (request->hasParam("time", true)){
+      started = true;
+      ended = false;
+
+      String time = request->getParam("time", true)->value();
+
+      xTimer = xTimerCreate(
+        "Timer",
+        (time.toInt() * 60000) / portTICK_PERIOD_MS,
+        pdFALSE,
+        (void*)0,
+        TimerCallBack
+      );
+      xTimerStart(xTimer, portMAX_DELAY);
+
+      request->send(LittleFS, "/partial/admincontrol.html", String(), false, [](const String& var) -> String{
+        String names, csv, download;
+        if (var == "NAMES"){
+          for (Response &responded : responses){
+            names += "<tr><td>"+String(responded.fields.c_str())+"</td></tr>";
+          }
+          return names;
+        }
+        if (var == "CSV"){
+          for (Response &responded : responses){
+            csv += "{ name: \""+ String(responded.fields.c_str()) + "\"},";
+          }
+          return csv;
+        }
+        return String();
+      });
+    }
+    } else {
+      request->send(LittleFS, "/partial/admintime.html");
+    }
+  });
+  // Admin End
+  server.on("/end", HTTP_POST, [](AsyncWebServerRequest *request){
+    IPAddress clientIP;
+
+    if (request->hasParam("ip", true)){
+      clientIP.fromString(request->getParam("ip",true)->value());
+    }
+
+    if (hostIP == clientIP){
+      if(!ended && started){
+        ended = true;
+
+        events.send("finished","finished",millis());
+
+        if(xTimer != NULL){
+          xTimerStop(xTimer, 0);
+        }
+
+      }
+
+    }
   });
   // Admin Profile
   server.on("/partial/adminprofile", HTTP_POST, [](AsyncWebServerRequest *request){
@@ -248,7 +326,52 @@ void setup() {
       }
     }
   });
-  
+  // Admin Manual Attendance
+  server.on("/manual", HTTP_POST, [](AsyncWebServerRequest *request){
+    IPAddress clientIP;
+    // Check for ip param
+    if (request->hasParam("ip", true)){
+      if (!clientIP.fromString(request->getParam("ip",true)->value())){
+        request->send(200, "text/html","<h1>Please Use Chrome or Firefox</h1>");
+        // request->send(200, "text/plain", "Unsuccessful");
+      }
+    }
+
+    if (hostIP == clientIP){
+      string collect;
+
+        if (request->hasParam(PARAM_FIRSTNAME, true) && request->hasParam(PARAM_LASTNAME, true)) {
+            collect = request->getParam(PARAM_FIRSTNAME, true)->value().c_str();
+            collect.append(" ");
+            collect.append(request->getParam(PARAM_LASTNAME, true)->value().c_str());
+        } else {
+            collect = "Nothing sent";
+            request->send(200,"text/plain");
+        }
+        responses.push_back({clientIP, collect});
+        
+        request->send(LittleFS, "/partial/admincontrol.html", String(), false, [](const String& var) -> String{
+          String names, csv, download;
+          if (var == "NAMES"){
+            for (Response &responded : responses){
+              names += "<tr><td>"+String(responded.fields.c_str())+"</td></tr>";
+            }
+            return names;
+          }
+          if (var == "CSV"){
+            for (Response &responded : responses){
+              csv += "{ name: \""+ String(responded.fields.c_str()) + "\"},";
+            }
+            return csv;
+          }
+          return String();
+        });
+    }
+
+  });  
+
+
+
   // Serve attendance.html
   server.on("/", HTTP_GET, [] (AsyncWebServerRequest *request) {
     request->send(LittleFS,"/attendance.html");
@@ -256,7 +379,7 @@ void setup() {
   // HTMX attendanceform
   server.on("/partial/attendanceform", HTTP_POST, [] (AsyncWebServerRequest *request){
 
-    if(!start){
+    if(!started){
       request->send(200, "text/html","<h1>Attendance is not yet open</h1>");
     } else {
       IPAddress clientIP;
@@ -277,7 +400,7 @@ void setup() {
   });
   // Attendance Submition
   server.on("/attendance", HTTP_POST, [](AsyncWebServerRequest *request){
-    if(!start){
+    if(!started){
       request->send(200, "text/html","<h1>Attendance is not yet open</h1>");
     } else {
       IPAddress clientIP;
@@ -312,6 +435,16 @@ void setup() {
     }
   });
 
+  events.onConnect([](AsyncEventSourceClient *client){
+    if(client->lastId()){
+      Serial.printf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
+    }
+    // send event with message "hello!", id current millis
+    // and set reconnect delay to 1 second
+    client->send("hello!", NULL, millis(), 10000);
+  });
+  server.addHandler(&events);
+
   server.onNotFound(notFound);
 
   server.begin();
@@ -323,5 +456,20 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+
+  if(ended && !started){
+    digitalWrite(redLED, HIGH);
+    digitalWrite(greenLED, LOW);
+    digitalWrite(blueLED, LOW);
+  } else if (!ended && started){
+    digitalWrite(redLED, LOW);
+    digitalWrite(greenLED, HIGH);
+    digitalWrite(blueLED, LOW);
+  } else if (ended && started){
+    digitalWrite(redLED, LOW);
+    digitalWrite(greenLED, LOW);
+    digitalWrite(blueLED, HIGH);
+  }
+
   delay(10);
 }

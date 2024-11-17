@@ -2,11 +2,30 @@
 <u style="cursor: pointer;" hx-post="/partial/adminprofile" hx-vals='js:{"ip":local}'>Profile</u>
 </h5>
 
-<table id="control" hx-swap-oob="true">
-    <thead>
+<article id="manual" hx-swap-oob="true" style="margin-bottom: 3rem;">
+    <h2>Add Student</h2>
+    <form hx-post="/manual" hx-vals='js:{"ip":local}''>
+        <label for="firstname">First Name
+            <input type="text" name="firstname" id="firstname" maxlength="15" required>
+        </label>
+    
+        <label for="lastname">Last Name
+            <input type="text" name="lastname" id="lastname" maxlength="15" required>
+        </label>
+        
+        <button>
+            Submit
+        </button>
+    </form>
+</article>
+
+<div id="control" hx-swap-oob="true">
+    <h1>Attendance</h1>
+    <table >
+        <thead>
         <tr>
             <th>
-                Name
+                Names
             </th>
         </tr>
     </thead>
@@ -14,11 +33,13 @@
         %NAMES%
     </tbody>
 </table>
-
-
+</div>
 
 <button id="downloadBtn" hx-swap-oob="true">Download</button>
-
+<div id="buttons" style="display: flex; justify-content: space-between;" hx-swap-oob="true">
+    <button id="secondDownloadBtn"></button>
+    <button hx-post="/end" hx-vals='js:{"ip":local}'' class="secondary">End</button>
+</div>
 <script id="csv" hx-swap-oob="true">
 // Sample data: an array of objects with just the name key
 const data = [
@@ -69,5 +90,12 @@ function downloadCSV(filename, data) {
 document.getElementById('downloadBtn').addEventListener('click', function() {
     downloadCSV('names.csv', data);
 });
+
+setTimeout(() => {
+    document.getElementById('secondDownloadBtn').addEventListener('click', function() {
+        downloadCSV('names.csv', data);
+    });
+}, 1000);
+
 
 </script>
